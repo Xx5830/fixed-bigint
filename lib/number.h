@@ -7,34 +7,47 @@ struct int2025_t {
 
     int2025_t ();
     int2025_t (int64_t value);
-    int2025_t (const char* str);
+    int2025_t(int32_t value);
+    int2025_t(const char* str);
     int2025_t (const int2025_t &other);
 
-    int2025_t operator ~ ();
-    int2025_t operator | (const int2025_t &other);
-    int2025_t operator & (const int2025_t &other);
-    int2025_t operator ^ (const int2025_t &other);
-    int2025_t operator + (const int2025_t &other);
-    int2025_t operator - (const int2025_t &other);
-    int2025_t operator * (const int2025_t &other);
-    int2025_t operator / (const int2025_t &other);
-    bool operator == (const int2025_t &other);
-    bool operator != (const int2025_t &other);
-    bool operator < (const int2025_t &other);
-    bool operator > (const int2025_t &other);
-    bool operator <= (const int2025_t &other);
-    bool operator >= (const int2025_t &other);
+    int2025_t operator ~ () const;
+    int2025_t operator | (const int2025_t &other) const;
+    int2025_t operator & (const int2025_t &other) const;
+    int2025_t operator ^ (const int2025_t &other) const;
+    int2025_t operator + (const int2025_t &other) const;
+    int2025_t operator - (const int2025_t &other) const;
+    int2025_t operator * (const int2025_t &other) const;
+    int2025_t operator / (const int2025_t &other) const;
+    int2025_t operator % (const int2025_t &other) const;
+    int2025_t& operator |= (const int2025_t &other);
+    int2025_t& operator &= (const int2025_t &other);
+    int2025_t& operator ^= (const int2025_t &other);
+    int2025_t& operator += (const int2025_t &other);
+    int2025_t& operator -= (const int2025_t &other);
+    int2025_t& operator *= (const int2025_t &other);
+    int2025_t& operator /= (const int2025_t &other);
+    int2025_t& operator %= (const int2025_t &other);
+    bool operator == (const int2025_t &other) const;
+    bool operator != (const int2025_t &other) const;
+    bool operator < (const int2025_t &other) const;
+    bool operator > (const int2025_t &other) const;
+    bool operator <= (const int2025_t &other) const;
+    bool operator >= (const int2025_t &other) const;
     int2025_t& operator=(const int2025_t &other);
     int2025_t& operator=(const int64_t& value);
     int2025_t& operator=(const char* str);
 
     char* toBinString() const;
+    char* toString() const;
     int64_t toInt64() const;
-    int64_t getSgn() const;
-    int2025_t& selfRight(uint32_t k);
-    int2025_t& selfLeft(uint32_t k);
-    int2025_t left(uint32_t k);
-    int2025_t right(uint32_t k);
+    uint8_t getSgn() const;
+    int2025_t& selfRightShift(uint32_t k);
+    int2025_t& selfLeftShift(uint32_t k);
+    int2025_t leftShift(uint32_t k) const;
+    int2025_t rightShift(uint32_t k) const;
+    uint8_t getFirstOneBit() const;
+    uint8_t getHightStepTwo() const;
 
    private:
     uint8_t arrBytes[kSize]{0};
@@ -43,7 +56,7 @@ struct int2025_t {
     void setChunk(uint32_t index, uint8_t value);
     void setChunk(uint32_t index, const char *value);
     template <class T>
-    int2025_t binaryOperation(const int2025_t &other, T f);
+    int2025_t binaryOperation(const int2025_t &other, T f) const;
     int2025_t& revSgn();
 };
 
