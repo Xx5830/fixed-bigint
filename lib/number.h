@@ -12,6 +12,7 @@ struct int2025_t {
     int2025_t (const int2025_t &other);
 
     int2025_t operator ~ () const;
+    int2025_t operator - () const;
     int2025_t operator | (const int2025_t &other) const;
     int2025_t operator & (const int2025_t &other) const;
     int2025_t operator ^ (const int2025_t &other) const;
@@ -42,12 +43,12 @@ struct int2025_t {
     char* toString() const;
     int64_t toInt64() const;
     uint8_t getSgn() const;
-    int2025_t& selfRightShift(uint32_t k);
     int2025_t& selfLeftShift(uint32_t k);
+    int2025_t& selfRightShift(uint32_t k);
     int2025_t leftShift(uint32_t k) const;
     int2025_t rightShift(uint32_t k) const;
-    uint8_t getFirstOneBit() const;
-    uint8_t getHightStepTwo() const;
+    int8_t getLowerPow() const;
+    int8_t getHightPow() const;
 
    private:
     uint8_t arrBytes[kSize]{0};
@@ -63,3 +64,7 @@ struct int2025_t {
 static_assert(sizeof(int2025_t) <= 254,  "Size of int2025_t must be no higher than 254 bytes");
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value);
+
+int2025_t from_string(const char *str);
+
+int2025_t from_int(uint32_t value);
