@@ -56,7 +56,7 @@ int2025_t::int2025_t(int32_t value) {
   setChunk(kSize - 1, getChunk(kSize - 1) & 0b00000011);
 }
 
-int2025_t::int2025_t(const char* str) {
+/* int2025_t::int2025_t(const char* str) {
   uint32_t sizeStr = 0;
   while (str[sizeStr] != '\0') {
     ++sizeStr;
@@ -111,6 +111,38 @@ int2025_t::int2025_t(const char* str) {
   }
 
   setChunk(kSize - 1, getChunk(kSize - 1) & 0b00000011);
+} */
+
+int2025_t::int2025_t(const char* str) {
+  uint32_t index = 0;
+  bool sgn = 0;
+  if (str[index] == '-'){
+    sgn = 1;
+    ++index;
+  }
+  if (str[index] == '+'){
+    ++index;
+  }
+
+  while (str[index] != '\0'){
+    int64_t buff = 0;
+    int64_t step = 1;
+
+    while (str[index] != '\0' && step < 1e18){
+      buff *= 10;
+      buff += str[index] - '0';
+
+      ++index;
+      step *= 10;
+    }
+
+    *this *= step;
+    *this += buff;
+  }
+
+  if (sgn && *this != 0){
+    revSgn();
+  }
 }
 
 int2025_t::int2025_t(const int2025_t& other) { *this = other; }
@@ -186,34 +218,10 @@ int2025_t int2025_t::operator^(const int2025_t& other) const {
 
 // --- public Arithmetics Operations
 
-// 11111111'1100111 ->-25
-// 00000000'1100100 ->100
-// 00000000'1001011 ->75
 int2025_t int2025_t::operator+(const int2025_t& other) const {
-  int2025_t result = 0;
-  bool adds = 0;
-  for (int indexByte = 0; indexByte < kSize; indexByte++) {
-    uint8_t byteA = this->getChunk(indexByte);
-    uint8_t byteB = other.getChunk(indexByte);
-    uint8_t resultByte = byteA + byteB;
+  int2025_t result = *this;
 
-    bool nextAdds = 0;
-    if (resultByte < byteA || resultByte < byteB) {
-      nextAdds = 1;
-    }
-
-    if (adds && resultByte == 0b11111111) {
-      nextAdds = 1;
-    }
-    resultByte += adds & 1;
-    adds = nextAdds;
-
-    result.setChunk(indexByte, resultByte);
-  }
-
-  result.setChunk(kSize - 1, result.getChunk(kSize - 1) & 0b00000011);
-
-  return result;
+  return result += other;
 }
 
 int2025_t int2025_t::operator-(const int2025_t& other) const {
@@ -266,7 +274,7 @@ int2025_t int2025_t::operator/(const int2025_t& other) const {
     return result;
   }
   if (otherCopy == 0) {
-    return nullptr;
+    return 0;
   }
 
   if (myCopy >= otherCopy) {
@@ -322,7 +330,27 @@ int2025_t& int2025_t::operator^=(const int2025_t& other) {
 }
 
 int2025_t& int2025_t::operator+=(const int2025_t& other) {
-  *this = *this + other;
+  bool adds = 0;
+  for (int indexByte = 0; indexByte < kSize; indexByte++) {
+    uint8_t byteA = this->getChunk(indexByte);
+    uint8_t byteB = other.getChunk(indexByte);
+    uint8_t resultByte = byteA + byteB;
+
+    bool nextAdds = 0;
+    if (resultByte < byteA || resultByte < byteB) {
+      nextAdds = 1;
+    }
+
+    if (adds && resultByte == 0b11111111) {
+      nextAdds = 1;
+    }
+    resultByte += adds & 1;
+    adds = nextAdds;
+
+    this->setChunk(indexByte, resultByte);
+  }
+
+  this->setChunk(kSize - 1, this->getChunk(kSize - 1) & 0b00000011);
 
   return *this;
 }
@@ -382,12 +410,6 @@ bool int2025_t::operator<(const int2025_t& other) const {
   }
 
   if (getSgn() == 1) {
-    for (uint32_t index = 0; index + 1 < other.kSize; index++) {
-      if (getChunk(index) > other.getChunk(index)) {
-        return true;
-      }
-    }
-
     uint8_t byteA = getChunk(kSize - 1);
     uint8_t byteB = other.getChunk(kSize - 1);
 
@@ -395,20 +417,36 @@ bool int2025_t::operator<(const int2025_t& other) const {
       return true;
     }
 
-    return false;
-  } else {
-    for (uint32_t index = 0; index + 1 < other.kSize; index++) {
-      if (getChunk(index) < other.getChunk(index)) {
+    for (int32_t index = kSize - 2; index >= 0; index--) {
+      if (getChunk(index) > other.getChunk(index)) {
         return true;
+      }
+      else if (getChunk(index) < other.getChunk(index)) {
+        return false;;
       }
     }
 
+    
+
+    return false;
+  } else {
     uint8_t byteA = getChunk(kSize - 1);
     uint8_t byteB = other.getChunk(kSize - 1);
 
     if (byteA & 1 < byteB & 1) {
       return true;
     }
+
+    for (int32_t index = kSize - 2; index >= 0; index--) {
+      if (getChunk(index) < other.getChunk(index)) {
+        return true;
+      }
+      if (getChunk(index) > other.getChunk(index)){
+        return false;
+      }
+    }
+
+    
 
     return false;
   }
