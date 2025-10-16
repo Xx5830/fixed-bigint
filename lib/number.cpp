@@ -766,6 +766,7 @@ std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
     ++index;
   }
 
+  delete[] result;
   return stream;
 }
 
