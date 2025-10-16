@@ -757,7 +757,7 @@ int2025_t int2025_t::rightShift(uint32_t k) const {
 // --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
-  char* result = value.toString();
+  char* result = value.toBinString();
 
   uint32_t index = 0;
   while (result[index] != '\0') {
