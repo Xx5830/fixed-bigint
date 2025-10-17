@@ -1,5 +1,4 @@
 #include "number.h"
-#include <cmath>
 
 // --- Constructions
 
@@ -94,11 +93,11 @@ int2025_t::int2025_t(const int2025_t& other) { *this = other; }
 // --- private Methods
 
 const uint8_t& int2025_t::GetChunk(uint32_t index) const {
-  return _arrBytes[index];
+  return arrBytes[index];
 }
 
 void int2025_t::SetChunk(uint32_t index, uint8_t value) {
-  _arrBytes[index] = value;
+  arrBytes[index] = value;
 }
 
 void int2025_t::SetChunk(uint32_t index, const char* value) {
