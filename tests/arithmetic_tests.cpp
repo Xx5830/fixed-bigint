@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <tuple>
+#include <string>
 #include "lib/number.h"
 
 TEST(Addition, PositiveNumbers) {
