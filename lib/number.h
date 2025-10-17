@@ -5,6 +5,8 @@
 struct int2025_t {
   static const uint32_t kSize = 254;
 
+  friend std::ostream& operator<<(std::ostream& stream, const int2025_t& value);
+
   int2025_t();
   int2025_t(int64_t value);
   int2025_t(int32_t value);

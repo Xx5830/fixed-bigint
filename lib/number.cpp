@@ -757,16 +757,10 @@ int2025_t int2025_t::rightShift(uint32_t k) const {
 // --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
-  char* result = value.toBinString();
-
-  uint32_t index = 0;
-  while (result[index] != '\0') {
-    stream << result[index];
-
-    ++index;
+  for (uint32_t index = 0; index < value.kSize; index++){
+    stream << value.getChunk(index);
   }
 
-  delete[] result;
   return stream;
 }
 
