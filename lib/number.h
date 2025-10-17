@@ -1,6 +1,9 @@
 #pragma once
 #include <cinttypes>
+#include <tuple>
+#include <string>
 #include <iostream>
+#include <cstdint>
 
 struct int2025_t {
   static const uint32_t kSize = 254;

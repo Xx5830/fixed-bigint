@@ -1,4 +1,5 @@
 #include "number.h"
+#include <cmath>
 
 // --- Constructions
 
@@ -55,63 +56,6 @@ int2025_t::int2025_t(int32_t value) {
 
   SetChunk(kSize - 1, GetChunk(kSize - 1) & 0b00000011);
 }
-
-/* int2025_t::int2025_t(const char* str) {
-  uint32_t sizeStr = 0;
-  while (str[sizeStr] != '\0') {
-    ++sizeStr;
-  }
-
-  char* copyStr = new char[sizeStr + 1];
-  for (uint32_t index = 0; index < sizeStr; index++) {
-    copyStr[index] = str[index];
-  }
-  copyStr[sizeStr] = '\0';
-
-  bool swap_sgn = 0;
-  if (copyStr[0] == '0') {
-    swap_sgn = 1;
-
-    for (uint32_t index = 0; index < sizeStr; index++) {
-      copyStr[index] = '1' - copyStr[index];
-    }
-
-    copyStr[sizeStr - 1]++;
-    uint32_t index = sizeStr - 1;
-    while (copyStr[index] > '1') {
-      copyStr[index] -= 2;
-      copyStr[index - 1]++;
-      --index;
-    }
-  }
-
-  for (uint32_t index_byte = 0; index_byte < kSize && index_byte * 8 < sizeStr;
-       index_byte++) {
-    uint8_t current = 0;
-
-    for (uint32_t indexStr =
-             std::max(0, (int32_t)((int32_t)sizeStr - 8 * (index_byte + 1)));
-         indexStr < (int32_t)sizeStr - 8 * index_byte; indexStr++) {
-      if (copyStr[indexStr] < '0' || copyStr[indexStr] > '1') {
-        *this = nullptr;
-        return;
-      }
-
-      current <<= 1;
-      if (copyStr[indexStr] == '1') {
-        current += 1;
-      }
-    }
-
-    setChunk(index_byte, current);
-  }
-
-  if (swap_sgn) {
-    revSgn();
-  }
-
-  setChunk(kSize - 1, getChunk(kSize - 1) & 0b00000011);
-} */
 
 int2025_t::int2025_t(const char* str) {
   uint32_t index = 0;
@@ -233,7 +177,7 @@ int2025_t int2025_t::operator-(const int2025_t& other) const {
 int2025_t int2025_t::operator*(const int2025_t& other) const {
   int2025_t my_copy = *this;
   int2025_t other_copy = other;
-  uint8_t finalSgn = my_copy.GetSgn() ^ other_copy.GetSgn();
+  uint8_t final_sgn = my_copy.GetSgn() ^ other_copy.GetSgn();
   if (my_copy.GetSgn()) {
     my_copy = my_copy.RevSgn();
   }
@@ -251,7 +195,7 @@ int2025_t int2025_t::operator*(const int2025_t& other) const {
     other_copy.SelfRightShift(1);
   }
 
-  if (finalSgn) {
+  if (final_sgn) {
     result = result.RevSgn();
   }
   result.SetChunk(kSize - 1, result.GetChunk(kSize - 1) & 0b00000011);
@@ -261,7 +205,7 @@ int2025_t int2025_t::operator*(const int2025_t& other) const {
 int2025_t int2025_t::operator/(const int2025_t& other) const {
   int2025_t my_copy = *this;
   int2025_t other_copy = other;
-  uint8_t finalSgn = my_copy.GetSgn() ^ other_copy.GetSgn();
+  uint8_t final_sgn = my_copy.GetSgn() ^ other_copy.GetSgn();
   if (my_copy.GetSgn()) {
     my_copy = my_copy.RevSgn();
   }
@@ -301,7 +245,7 @@ int2025_t int2025_t::operator/(const int2025_t& other) const {
     }
   }
 
-  if (finalSgn) {
+  if (final_sgn) {
     result.RevSgn();
   }
   return result;
@@ -382,7 +326,7 @@ int2025_t& int2025_t::operator%=(const int2025_t& other) {
 // --- public Boolean Operations
 
 bool int2025_t::operator==(const int2025_t& other) const {
-  for (uint32_t index = 0; index + 1 < other.kSize; index++) {
+  for (uint32_t index = 0; index + 1 < kSize; index++) {
     if (GetChunk(index) != other.GetChunk(index)) {
       return false;
     }
@@ -559,17 +503,17 @@ char* int2025_t::ToString() const {
   char* char_result;
   if (!sgn) {
     char_result = new char[result.end + 1];
-    for (int32_t indexResult = result.end - 1, indexchar_result = 0;
-         indexResult >= 0; indexResult--, indexchar_result++) {
-      char_result[indexchar_result] = result.buff[indexResult];
+    for (int32_t index_result = result.end - 1, index_char_result = 0;
+         index_result >= 0; index_result--, index_char_result++) {
+      char_result[index_char_result] = result.buff[index_result];
     }
     char_result[result.end] = '\0';
   } else {
     char_result = new char[result.end + 2];
     char_result[0] = '-';
-    for (int32_t indexResult = result.end - 1, indexchar_result = 1;
-         indexResult >= 0; indexResult--, indexchar_result++) {
-      char_result[indexchar_result] = result.buff[indexResult];
+    for (int32_t index_result = result.end - 1, index_char_result = 1;
+         index_result >= 0; index_result--, index_char_result++) {
+      char_result[index_char_result] = result.buff[index_result];
     }
     char_result[result.end + 1] = '\0';
   }
@@ -615,11 +559,11 @@ int32_t int2025_t::GetLowerPow() const {
 
     return -1;
   } else {
-    int2025_t copyThis = *this;
-    copyThis.RevSgn();
+    int2025_t copy_this = *this;
+    copy_this.RevSgn();
 
     for (uint32_t index = 0; index + 1 < kSize; index++) {
-      uint8_t byte = copyThis.GetChunk(index);
+      uint8_t byte = copy_this.GetChunk(index);
 
       for (uint32_t k = 0; k < 8; k++) {
         uint8_t bit = (1 << k) & byte;
@@ -630,7 +574,7 @@ int32_t int2025_t::GetLowerPow() const {
       }
     }
 
-    if (!(copyThis.GetChunk(kSize - 1) & 1)) {
+    if (!(copy_this.GetChunk(kSize - 1) & 1)) {
       return (int32_t)(kSize - 1) * 8;
     }
 
