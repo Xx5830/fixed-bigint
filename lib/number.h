@@ -41,26 +41,26 @@ struct int2025_t {
   int2025_t& operator=(const int64_t& value);
   int2025_t& operator=(const char* str);
 
-  char* toBinString() const;
-  char* toString() const;
-  int64_t toInt64() const;
-  uint8_t getSgn() const;
-  int2025_t& selfLeftShift(uint32_t k);
-  int2025_t& selfRightShift(uint32_t k);
-  int2025_t leftShift(uint32_t k) const;
-  int2025_t rightShift(uint32_t k) const;
-  int32_t getLowerPow() const;
-  int32_t getHightPow() const;
+  char* ToBinString() const;
+  char* ToString() const;
+  int64_t ToInt64() const;
+  uint8_t GetSgn() const;
+  int2025_t& SelfLeftShift(uint32_t k);
+  int2025_t& SelfRightShift(uint32_t k);
+  int2025_t LeftShift(uint32_t k) const;
+  int2025_t RightShift(uint32_t k) const;
+  int32_t GetLowerPow() const;
+  int32_t GetHightPow() const;
 
  private:
-  uint8_t arrBytes[kSize]{0};
+  uint8_t _arrBytes[kSize]{0};
 
-  const uint8_t& getChunk(uint32_t index) const;
-  void setChunk(uint32_t index, uint8_t value);
-  void setChunk(uint32_t index, const char* value);
+  const uint8_t& GetChunk(uint32_t index) const;
+  void SetChunk(uint32_t index, uint8_t value);
+  void SetChunk(uint32_t index, const char* value);
   template <class T>
-  int2025_t binaryOperation(const int2025_t& other, T f) const;
-  int2025_t& revSgn();
+  int2025_t BinaryOperation(const int2025_t& other, T f) const;
+  int2025_t& RevSgn();
 };
 
 static_assert(sizeof(int2025_t) <= 254,

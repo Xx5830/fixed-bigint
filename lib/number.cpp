@@ -5,55 +5,55 @@
 int2025_t::int2025_t() {}
 
 int2025_t::int2025_t(int64_t value) {
-  bool swapSgn = 0;
+  bool swap_sgn = 0;
   if (value < 0) {
-    swapSgn = 1;
+    swap_sgn = 1;
     value = -value;
   }
-  int64_t copyValue = value;
+  int64_t copy_value = value;
 
-  for (uint32_t indexByte = 0; indexByte < 8; indexByte++) {
+  for (uint32_t index_byte = 0; index_byte < 8; index_byte++) {
     int64_t current = 0;
 
     for (uint32_t k = 0; k < 8; k++) {
-      current += (copyValue & 1) << k;
-      copyValue >>= 1;
+      current += (copy_value & 1) << k;
+      copy_value >>= 1;
     }
 
-    setChunk(indexByte, current);
+    SetChunk(index_byte, current);
   }
 
-  if (swapSgn) {
-    revSgn();
+  if (swap_sgn) {
+    RevSgn();
   }
 
-  setChunk(kSize - 1, getChunk(kSize - 1) & 0b00000011);
+  SetChunk(kSize - 1, GetChunk(kSize - 1) & 0b00000011);
 }
 
 int2025_t::int2025_t(int32_t value) {
-  bool swapSgn = 0;
+  bool swap_sgn = 0;
   if (value < 0) {
-    swapSgn = 1;
+    swap_sgn = 1;
     value = -value;
   }
-  int32_t copyValue = value;
+  int32_t copy_value = value;
 
-  for (uint32_t indexByte = 0; indexByte < 4; indexByte++) {
+  for (uint32_t index_byte = 0; index_byte < 4; index_byte++) {
     int32_t current = 0;
 
     for (uint32_t k = 0; k < 8; k++) {
-      current += (copyValue & 1) << k;
-      copyValue >>= 1;
+      current += (copy_value & 1) << k;
+      copy_value >>= 1;
     }
 
-    setChunk(indexByte, current);
+    SetChunk(index_byte, current);
   }
 
-  if (swapSgn) {
-    revSgn();
+  if (swap_sgn) {
+    RevSgn();
   }
 
-  setChunk(kSize - 1, getChunk(kSize - 1) & 0b00000011);
+  SetChunk(kSize - 1, GetChunk(kSize - 1) & 0b00000011);
 }
 
 /* int2025_t::int2025_t(const char* str) {
@@ -68,9 +68,9 @@ int2025_t::int2025_t(int32_t value) {
   }
   copyStr[sizeStr] = '\0';
 
-  bool swapSgn = 0;
+  bool swap_sgn = 0;
   if (copyStr[0] == '0') {
-    swapSgn = 1;
+    swap_sgn = 1;
 
     for (uint32_t index = 0; index < sizeStr; index++) {
       copyStr[index] = '1' - copyStr[index];
@@ -85,13 +85,13 @@ int2025_t::int2025_t(int32_t value) {
     }
   }
 
-  for (uint32_t indexByte = 0; indexByte < kSize && indexByte * 8 < sizeStr;
-       indexByte++) {
+  for (uint32_t index_byte = 0; index_byte < kSize && index_byte * 8 < sizeStr;
+       index_byte++) {
     uint8_t current = 0;
 
     for (uint32_t indexStr =
-             std::max(0, (int32_t)((int32_t)sizeStr - 8 * (indexByte + 1)));
-         indexStr < (int32_t)sizeStr - 8 * indexByte; indexStr++) {
+             std::max(0, (int32_t)((int32_t)sizeStr - 8 * (index_byte + 1)));
+         indexStr < (int32_t)sizeStr - 8 * index_byte; indexStr++) {
       if (copyStr[indexStr] < '0' || copyStr[indexStr] > '1') {
         *this = nullptr;
         return;
@@ -103,10 +103,10 @@ int2025_t::int2025_t(int32_t value) {
       }
     }
 
-    setChunk(indexByte, current);
+    setChunk(index_byte, current);
   }
 
-  if (swapSgn) {
+  if (swap_sgn) {
     revSgn();
   }
 
@@ -141,7 +141,7 @@ int2025_t::int2025_t(const char* str) {
   }
 
   if (sgn && *this != 0){
-    revSgn();
+    RevSgn();
   }
 }
 
@@ -149,15 +149,15 @@ int2025_t::int2025_t(const int2025_t& other) { *this = other; }
 
 // --- private Methods
 
-const uint8_t& int2025_t::getChunk(uint32_t index) const {
-  return arrBytes[index];
+const uint8_t& int2025_t::GetChunk(uint32_t index) const {
+  return _arrBytes[index];
 }
 
-void int2025_t::setChunk(uint32_t index, uint8_t value) {
-  arrBytes[index] = value;
+void int2025_t::SetChunk(uint32_t index, uint8_t value) {
+  _arrBytes[index] = value;
 }
 
-void int2025_t::setChunk(uint32_t index, const char* value) {
+void int2025_t::SetChunk(uint32_t index, const char* value) {
   uint32_t current = 0;
   for (uint32_t index = 0; index < 8; index++) {
     current <<= 1;
@@ -166,21 +166,21 @@ void int2025_t::setChunk(uint32_t index, const char* value) {
     }
   }
 
-  setChunk(index, current);
+  SetChunk(index, current);
 }
 
 template <class T>
-int2025_t int2025_t::binaryOperation(const int2025_t& other, T f) const {
+int2025_t int2025_t::BinaryOperation(const int2025_t& other, T f) const {
   int2025_t result;
 
   for (uint32_t index = 0; index < kSize; index++) {
-    result.setChunk(index, f(this->getChunk(index), other.getChunk(index)));
+    result.SetChunk(index, f(this->GetChunk(index), other.GetChunk(index)));
   }
 
   return result;
 }
 
-int2025_t& int2025_t::revSgn() {
+int2025_t& int2025_t::RevSgn() {
   *this = ~(*this);
   *this = (*this) + 1;
 
@@ -193,7 +193,7 @@ int2025_t int2025_t::operator~() const {
   int2025_t result;
 
   for (uint32_t index = 0; index < int2025_t::kSize; index++) {
-    result.setChunk(index, ~this->getChunk(index));
+    result.SetChunk(index, ~this->GetChunk(index));
   }
 
   return result;
@@ -201,19 +201,19 @@ int2025_t int2025_t::operator~() const {
 
 int2025_t int2025_t::operator-() const {
   int2025_t result = *this;
-  return result.revSgn();
+  return result.RevSgn();
 }
 
 int2025_t int2025_t::operator|(const int2025_t& other) const {
-  return binaryOperation(other, [](uint8_t a, uint8_t b) { return a | b; });
+  return BinaryOperation(other, [](uint8_t a, uint8_t b) { return a | b; });
 }
 
 int2025_t int2025_t::operator&(const int2025_t& other) const {
-  return binaryOperation(other, [](uint8_t a, uint8_t b) { return a & b; });
+  return BinaryOperation(other, [](uint8_t a, uint8_t b) { return a & b; });
 }
 
 int2025_t int2025_t::operator^(const int2025_t& other) const {
-  return binaryOperation(other, [](uint8_t a, uint8_t b) { return a ^ b; });
+  return BinaryOperation(other, [](uint8_t a, uint8_t b) { return a ^ b; });
 }
 
 // --- public Arithmetics Operations
@@ -226,83 +226,83 @@ int2025_t int2025_t::operator+(const int2025_t& other) const {
 
 int2025_t int2025_t::operator-(const int2025_t& other) const {
   int2025_t result = other;
-  result = *this + result.revSgn();
+  result = *this + result.RevSgn();
   return result;
 }
 
 int2025_t int2025_t::operator*(const int2025_t& other) const {
-  int2025_t myCopy = *this;
-  int2025_t otherCopy = other;
-  uint8_t finalSgn = myCopy.getSgn() ^ otherCopy.getSgn();
-  if (myCopy.getSgn()) {
-    myCopy = myCopy.revSgn();
+  int2025_t my_copy = *this;
+  int2025_t other_copy = other;
+  uint8_t finalSgn = my_copy.GetSgn() ^ other_copy.GetSgn();
+  if (my_copy.GetSgn()) {
+    my_copy = my_copy.RevSgn();
   }
-  if (otherCopy.getSgn()) {
-    otherCopy = otherCopy.revSgn();
+  if (other_copy.GetSgn()) {
+    other_copy = other_copy.RevSgn();
   }
   int2025_t result = 0;
 
-  while (otherCopy.getLowerPow() != -1) {
-    if (otherCopy.getChunk(0) & 1) {
-      result += myCopy;
+  while (other_copy.GetLowerPow() != -1) {
+    if (other_copy.GetChunk(0) & 1) {
+      result += my_copy;
     }
 
-    myCopy.selfLeftShift(1);
-    otherCopy.selfRightShift(1);
+    my_copy.SelfLeftShift(1);
+    other_copy.SelfRightShift(1);
   }
 
   if (finalSgn) {
-    result = result.revSgn();
+    result = result.RevSgn();
   }
-  result.setChunk(kSize - 1, result.getChunk(kSize - 1) & 0b00000011);
+  result.SetChunk(kSize - 1, result.GetChunk(kSize - 1) & 0b00000011);
   return result;
 }
 
 int2025_t int2025_t::operator/(const int2025_t& other) const {
-  int2025_t myCopy = *this;
-  int2025_t otherCopy = other;
-  uint8_t finalSgn = myCopy.getSgn() ^ otherCopy.getSgn();
-  if (myCopy.getSgn()) {
-    myCopy = myCopy.revSgn();
+  int2025_t my_copy = *this;
+  int2025_t other_copy = other;
+  uint8_t finalSgn = my_copy.GetSgn() ^ other_copy.GetSgn();
+  if (my_copy.GetSgn()) {
+    my_copy = my_copy.RevSgn();
   }
-  if (otherCopy.getSgn()) {
-    otherCopy = otherCopy.revSgn();
+  if (other_copy.GetSgn()) {
+    other_copy = other_copy.RevSgn();
   }
   int2025_t result = 0;
 
-  if (myCopy < otherCopy) {
+  if (my_copy < other_copy) {
     return result;
   }
-  if (otherCopy == 0) {
+  if (other_copy == 0) {
     return 0;
   }
 
-  if (myCopy >= otherCopy) {
-    int32_t dif = myCopy.getHightPow() - otherCopy.getHightPow();
-    int32_t difPos = dif;
+  if (my_copy >= other_copy) {
+    int32_t dif = my_copy.GetHightPow() - other_copy.GetHightPow();
+    int32_t dif_pos = dif;
 
-    int2025_t hightBit = 1;
-    hightBit.selfLeftShift(dif);
-    otherCopy.selfLeftShift(dif);
+    int2025_t hight_bit = 1;
+    hight_bit.SelfLeftShift(dif);
+    other_copy.SelfLeftShift(dif);
 
-    while (difPos >= 0) {
-      while (difPos >= 0 && otherCopy > myCopy) {
-        otherCopy.selfRightShift(1);
-        hightBit.selfRightShift(1);
-        --difPos;
+    while (dif_pos >= 0) {
+      while (dif_pos >= 0 && other_copy > my_copy) {
+        other_copy.SelfRightShift(1);
+        hight_bit.SelfRightShift(1);
+        --dif_pos;
       }
 
-      if (difPos < 0) {
+      if (dif_pos < 0) {
         break;
       }
 
-      result += hightBit;
-      myCopy -= otherCopy;
+      result += hight_bit;
+      my_copy -= other_copy;
     }
   }
 
   if (finalSgn) {
-    result.revSgn();
+    result.RevSgn();
   }
   return result;
 }
@@ -331,26 +331,26 @@ int2025_t& int2025_t::operator^=(const int2025_t& other) {
 
 int2025_t& int2025_t::operator+=(const int2025_t& other) {
   bool adds = 0;
-  for (int indexByte = 0; indexByte < kSize; indexByte++) {
-    uint8_t byteA = this->getChunk(indexByte);
-    uint8_t byteB = other.getChunk(indexByte);
-    uint8_t resultByte = byteA + byteB;
+  for (int index_byte = 0; index_byte < kSize; index_byte++) {
+    uint8_t byte_a = this->GetChunk(index_byte);
+    uint8_t byte_b = other.GetChunk(index_byte);
+    uint8_t result_byte = byte_a + byte_b;
 
-    bool nextAdds = 0;
-    if (resultByte < byteA || resultByte < byteB) {
-      nextAdds = 1;
+    bool next_adds = 0;
+    if (result_byte < byte_a || result_byte < byte_b) {
+      next_adds = 1;
     }
 
-    if (adds && resultByte == 0b11111111) {
-      nextAdds = 1;
+    if (adds && result_byte == 0b11111111) {
+      next_adds = 1;
     }
-    resultByte += adds & 1;
-    adds = nextAdds;
+    result_byte += adds & 1;
+    adds = next_adds;
 
-    this->setChunk(indexByte, resultByte);
+    this->SetChunk(index_byte, result_byte);
   }
 
-  this->setChunk(kSize - 1, this->getChunk(kSize - 1) & 0b00000011);
+  this->SetChunk(kSize - 1, this->GetChunk(kSize - 1) & 0b00000011);
 
   return *this;
 }
@@ -383,17 +383,17 @@ int2025_t& int2025_t::operator%=(const int2025_t& other) {
 
 bool int2025_t::operator==(const int2025_t& other) const {
   for (uint32_t index = 0; index + 1 < other.kSize; index++) {
-    if (getChunk(index) != other.getChunk(index)) {
+    if (GetChunk(index) != other.GetChunk(index)) {
       return false;
     }
   }
 
-  uint8_t byteA = getChunk(kSize - 1);
-  uint8_t byteB = other.getChunk(kSize - 1);
+  uint8_t byte_a = GetChunk(kSize - 1);
+  uint8_t byte_b = other.GetChunk(kSize - 1);
 
-  if ((byteA & 1) != (byteB & 1)) {
+  if ((byte_a & 1) != (byte_b & 1)) {
     return false;
-  } else if ((byteA & 2) != (byteB & 2)) {
+  } else if ((byte_a & 2) != (byte_b & 2)) {
     return false;
   }
 
@@ -405,23 +405,23 @@ bool int2025_t::operator!=(const int2025_t& other) const {
 }
 
 bool int2025_t::operator<(const int2025_t& other) const {
-  if (getSgn() != other.getSgn()) {
-    return getSgn() == 1;
+  if (GetSgn() != other.GetSgn()) {
+    return GetSgn() == 1;
   }
 
-  if (getSgn() == 1) {
-    uint8_t byteA = getChunk(kSize - 1);
-    uint8_t byteB = other.getChunk(kSize - 1);
+  if (GetSgn() == 1) {
+    uint8_t byte_a = GetChunk(kSize - 1);
+    uint8_t byte_b = other.GetChunk(kSize - 1);
 
-    if (byteA & 1 > byteB & 1) {
+    if (byte_a & 1 > byte_b & 1) {
       return true;
     }
 
     for (int32_t index = kSize - 2; index >= 0; index--) {
-      if (getChunk(index) > other.getChunk(index)) {
+      if (GetChunk(index) > other.GetChunk(index)) {
         return true;
       }
-      else if (getChunk(index) < other.getChunk(index)) {
+      else if (GetChunk(index) < other.GetChunk(index)) {
         return false;;
       }
     }
@@ -430,18 +430,18 @@ bool int2025_t::operator<(const int2025_t& other) const {
 
     return false;
   } else {
-    uint8_t byteA = getChunk(kSize - 1);
-    uint8_t byteB = other.getChunk(kSize - 1);
+    uint8_t byte_a = GetChunk(kSize - 1);
+    uint8_t byte_b = other.GetChunk(kSize - 1);
 
-    if (byteA & 1 < byteB & 1) {
+    if (byte_a & 1 < byte_b & 1) {
       return true;
     }
 
     for (int32_t index = kSize - 2; index >= 0; index--) {
-      if (getChunk(index) < other.getChunk(index)) {
+      if (GetChunk(index) < other.GetChunk(index)) {
         return true;
       }
-      if (getChunk(index) > other.getChunk(index)){
+      if (GetChunk(index) > other.GetChunk(index)){
         return false;
       }
     }
@@ -468,7 +468,7 @@ bool int2025_t::operator>=(const int2025_t& other) const {
 
 int2025_t& int2025_t::operator=(const int2025_t& other) {
   for (uint32_t index = 0; index < kSize; index++) {
-    setChunk(index, other.getChunk(index));
+    SetChunk(index, other.GetChunk(index));
   }
 
   return *this;
@@ -484,29 +484,29 @@ int2025_t& int2025_t::operator=(const char* str) {
 
 // --- public Methods
 
-char* int2025_t::toBinString() const {
+char* int2025_t::ToBinString() const {
   char* result = new char[2025]{0};
-  char revResult[2025];
+  char rev_result[2025];
 
-  for (uint32_t indexByte = 0; indexByte < kSize; indexByte++) {
-    uint8_t byte = getChunk(indexByte);
-    for (uint32_t indexBit = 0; indexBit < 8 && indexByte * 8 + indexBit < 2025;
-         indexBit++) {
+  for (uint32_t index_byte = 0; index_byte < kSize; index_byte++) {
+    uint8_t byte = GetChunk(index_byte);
+    for (uint32_t index_bit = 0; index_bit < 8 && index_byte * 8 + index_bit < 2025;
+         index_bit++) {
       char bit = byte & 1;
       byte >>= 1;
 
-      revResult[indexByte * 8 + indexBit] = '0' + bit;
+      rev_result[index_byte * 8 + index_bit] = '0' + bit;
     }
   }
 
   for (uint32_t index = 0; index < 2025; index++) {
-    result[index] = revResult[2024 - index];
+    result[index] = rev_result[2024 - index];
   }
 
   return result;
 }
 
-char* int2025_t::toString() const {
+char* int2025_t::ToString() const {
   struct BigInt {
     char buff[1000]{48};
     uint32_t end = 1;
@@ -539,14 +539,14 @@ char* int2025_t::toString() const {
   BigInt p;
   p.buff[p.end - 1] = '1';
 
-  int2025_t myCopy = *this;
+  int2025_t my_copy = *this;
 
-  uint8_t sgn = myCopy.getSgn();
+  uint8_t sgn = my_copy.GetSgn();
   if (sgn) {
-    myCopy.revSgn();
+    my_copy.RevSgn();
   }
 
-  char* bits = myCopy.toBinString();
+  char* bits = my_copy.ToBinString();
 
   for (int32_t index = 2024; index >= 0; index--) {
     if (bits[index] == '1') {
@@ -556,36 +556,36 @@ char* int2025_t::toString() const {
     p += p;
   }
 
-  char* charResult;
+  char* char_result;
   if (!sgn) {
-    charResult = new char[result.end + 1];
-    for (int32_t indexResult = result.end - 1, indexCharResult = 0;
-         indexResult >= 0; indexResult--, indexCharResult++) {
-      charResult[indexCharResult] = result.buff[indexResult];
+    char_result = new char[result.end + 1];
+    for (int32_t indexResult = result.end - 1, indexchar_result = 0;
+         indexResult >= 0; indexResult--, indexchar_result++) {
+      char_result[indexchar_result] = result.buff[indexResult];
     }
-    charResult[result.end] = '\0';
+    char_result[result.end] = '\0';
   } else {
-    charResult = new char[result.end + 2];
-    charResult[0] = '-';
-    for (int32_t indexResult = result.end - 1, indexCharResult = 1;
-         indexResult >= 0; indexResult--, indexCharResult++) {
-      charResult[indexCharResult] = result.buff[indexResult];
+    char_result = new char[result.end + 2];
+    char_result[0] = '-';
+    for (int32_t indexResult = result.end - 1, indexchar_result = 1;
+         indexResult >= 0; indexResult--, indexchar_result++) {
+      char_result[indexchar_result] = result.buff[indexResult];
     }
-    charResult[result.end + 1] = '\0';
+    char_result[result.end + 1] = '\0';
   }
 
   delete[] bits;
-  return charResult;
+  return char_result;
 }
 
-int64_t int2025_t::toInt64() const {
+int64_t int2025_t::ToInt64() const {
   // Задать вопрос про реализацию через указатели
   int64_t result = 0;
   for (uint32_t k = 0; k < 8; k++) {
-    result += (int64_t)getChunk(k) << (8 * k);
+    result += (int64_t)GetChunk(k) << (8 * k);
   }
 
-  int64_t sgn = getSgn();
+  int64_t sgn = GetSgn();
 
   result -= (result & ((int64_t)1 << 63));
   result += sgn << 63;
@@ -593,12 +593,12 @@ int64_t int2025_t::toInt64() const {
   return result;
 }
 
-uint8_t int2025_t::getSgn() const { return (getChunk(kSize - 1) & 2) >> 1; }
+uint8_t int2025_t::GetSgn() const { return (GetChunk(kSize - 1) & 2) >> 1; }
 
-int32_t int2025_t::getLowerPow() const {
-  if (!getSgn()) {
+int32_t int2025_t::GetLowerPow() const {
+  if (!GetSgn()) {
     for (uint32_t index = 0; index + 1 < kSize; index++) {
-      uint8_t byte = getChunk(index);
+      uint8_t byte = GetChunk(index);
 
       for (uint32_t k = 0; k < 8; k++) {
         uint8_t bit = (1 << k) & byte;
@@ -609,17 +609,17 @@ int32_t int2025_t::getLowerPow() const {
       }
     }
 
-    if (getChunk(kSize - 1) & 1) {
+    if (GetChunk(kSize - 1) & 1) {
       return (int32_t)(kSize - 1) * 8;
     }
 
     return -1;
   } else {
     int2025_t copyThis = *this;
-    copyThis.revSgn();
+    copyThis.RevSgn();
 
     for (uint32_t index = 0; index + 1 < kSize; index++) {
-      uint8_t byte = copyThis.getChunk(index);
+      uint8_t byte = copyThis.GetChunk(index);
 
       for (uint32_t k = 0; k < 8; k++) {
         uint8_t bit = (1 << k) & byte;
@@ -630,7 +630,7 @@ int32_t int2025_t::getLowerPow() const {
       }
     }
 
-    if (!(copyThis.getChunk(kSize - 1) & 1)) {
+    if (!(copyThis.GetChunk(kSize - 1) & 1)) {
       return (int32_t)(kSize - 1) * 8;
     }
 
@@ -638,14 +638,14 @@ int32_t int2025_t::getLowerPow() const {
   }
 }
 
-int32_t int2025_t::getHightPow() const {
-  if (!getSgn()) {
-    if (getChunk(kSize - 1) & 1) {
+int32_t int2025_t::GetHightPow() const {
+  if (!GetSgn()) {
+    if (GetChunk(kSize - 1) & 1) {
       return (int32_t)(kSize - 1) * 8;
     }
 
     for (int32_t index = kSize - 1; index >= 0; index--) {
-      uint8_t byte = getChunk(index);
+      uint8_t byte = GetChunk(index);
 
       for (int32_t k = 7; k >= 0; k--) {
         uint8_t bit = (1 << k) & byte;
@@ -658,12 +658,12 @@ int32_t int2025_t::getHightPow() const {
 
     return -1;
   } else {
-    if (!(getChunk(kSize - 1) & 1)) {
+    if (!(GetChunk(kSize - 1) & 1)) {
       return (int32_t)(kSize - 1) * 8;
     }
 
     for (int32_t index = kSize - 1; index >= 0; index--) {
-      uint8_t byte = getChunk(index);
+      uint8_t byte = GetChunk(index);
 
       for (int32_t k = 7; k >= 0; k--) {
         uint8_t bit = (1 << k) & byte;
@@ -678,87 +678,87 @@ int32_t int2025_t::getHightPow() const {
   }
 }
 
-int2025_t& int2025_t::selfLeftShift(uint32_t k) {
+int2025_t& int2025_t::SelfLeftShift(uint32_t k) {
   if (k == 0) {
     return *this;
   }
 
-  uint32_t cntByte = k / 8;
+  uint32_t cnt_byte = k / 8;
 
-  if (cntByte > 0) {
+  if (cnt_byte > 0) {
     for (int32_t index = kSize - 1; index >= 0; index--) {
-      if (index + cntByte < kSize) {
-        setChunk(index + cntByte, getChunk(index));
+      if (index + cnt_byte < kSize) {
+        SetChunk(index + cnt_byte, GetChunk(index));
       }
 
-      setChunk(index, (uint8_t)0);
+      SetChunk(index, (uint8_t)0);
     }
   }
 
-  k -= cntByte * 8;
+  k -= cnt_byte * 8;
 
   for (int32_t index = kSize - 1; index >= 0; index--) {
-    setChunk(index, getChunk(index) << k);
+    SetChunk(index, GetChunk(index) << k);
 
     if (index > 0) {
-      uint8_t leftBit = getChunk(index - 1);
+      uint8_t left_bit = GetChunk(index - 1);
 
-      uint8_t mask = leftBit >> (8 - k);
-      setChunk(index, getChunk(index) + mask);
+      uint8_t mask = left_bit >> (8 - k);
+      SetChunk(index, GetChunk(index) + mask);
     }
   }
 
   return *this;
 }
 
-int2025_t& int2025_t::selfRightShift(uint32_t k) {
+int2025_t& int2025_t::SelfRightShift(uint32_t k) {
   if (k == 0) {
     return *this;
   }
 
-  uint32_t cntByte = k / 8;
+  uint32_t cnt_byte = k / 8;
 
-  if (cntByte > 0) {
+  if (cnt_byte > 0) {
     for (int32_t index = 0; index < kSize; index++) {
-      if (index - cntByte >= 0) {
-        setChunk(index - cntByte, getChunk(index));
+      if (index - cnt_byte >= 0) {
+        SetChunk(index - cnt_byte, GetChunk(index));
       }
 
-      setChunk(index, (uint8_t)0);
+      SetChunk(index, (uint8_t)0);
     }
   }
 
-  k -= cntByte * 8;
+  k -= cnt_byte * 8;
 
   for (int32_t index = 0; index < kSize; index++) {
-    setChunk(index, getChunk(index) >> k);
+    SetChunk(index, GetChunk(index) >> k);
 
     if (index < kSize - 1) {
-      uint8_t rightBit = getChunk(index + 1);
+      uint8_t right_bit = GetChunk(index + 1);
 
-      uint8_t mask = rightBit << (8 - k);
-      setChunk(index, getChunk(index) + mask);
+      uint8_t mask = right_bit << (8 - k);
+      SetChunk(index, GetChunk(index) + mask);
     }
   }
 
   return *this;
 }
 
-int2025_t int2025_t::leftShift(uint32_t k) const {
+int2025_t int2025_t::LeftShift(uint32_t k) const {
   int2025_t result = *this;
-  return result.selfLeftShift(k);
+  return result.SelfLeftShift(k);
 }
 
-int2025_t int2025_t::rightShift(uint32_t k) const {
+int2025_t int2025_t::RightShift(uint32_t k) const {
   int2025_t result = *this;
-  return result.selfRightShift(k);
+  return result.SelfRightShift(k);
 }
 
 // --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
   for (uint32_t index = 0; index < value.kSize; index++){
-    stream << value.getChunk(index);
+    stream << value.GetChunk(index);
   }
 
   return stream;
