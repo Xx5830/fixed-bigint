@@ -1,4 +1,12 @@
 #include "number.h"
+#include <cinttypes>
+#include <tuple>
+#include <utility>
+#include <string>
+#include <iostream>
+#include <cstdint>
+#include <ostream>
+#include <cmath>
 
 // --- Constructions
 
