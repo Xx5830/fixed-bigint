@@ -44,6 +44,7 @@ struct int2025_t {
 
   char* ToBinString() const;
   char* ToString() const;
+  char* ToHexString() const;
   int64_t ToInt64() const;
   uint8_t GetSgn() const;
   int2025_t& SelfLeftShift(uint32_t k);
@@ -59,8 +60,6 @@ struct int2025_t {
   const uint8_t& GetChunk(uint32_t index) const;
   void SetChunk(uint32_t index, uint8_t value);
   void SetChunk(uint32_t index, const char* value);
-  template <class T>
-  int2025_t BinaryOperation(const int2025_t& other, T f) const;
   int2025_t& RevSgn();
 };
 

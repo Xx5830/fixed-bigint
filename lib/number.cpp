@@ -116,17 +116,6 @@ void int2025_t::SetChunk(uint32_t index, const char* value) {
   SetChunk(index, current);
 }
 
-template <class T>
-int2025_t int2025_t::BinaryOperation(const int2025_t& other, T f) const {
-  int2025_t result;
-
-  for (uint32_t index = 0; index < kSize; index++) {
-    result.SetChunk(index, f(this->GetChunk(index), other.GetChunk(index)));
-  }
-
-  return result;
-}
-
 int2025_t& int2025_t::RevSgn() {
   *this = ~(*this);
   *this = (*this) + 1;
@@ -152,15 +141,24 @@ int2025_t int2025_t::operator-() const {
 }
 
 int2025_t int2025_t::operator|(const int2025_t& other) const {
-  return BinaryOperation(other, [](uint8_t a, uint8_t b) { return a | b; });
+  int2025_t result = *this;
+  result |= result;
+
+  return result;
 }
 
 int2025_t int2025_t::operator&(const int2025_t& other) const {
-  return BinaryOperation(other, [](uint8_t a, uint8_t b) { return a & b; });
+  int2025_t result = *this;
+  result &= result;
+
+  return result;
 }
 
 int2025_t int2025_t::operator^(const int2025_t& other) const {
-  return BinaryOperation(other, [](uint8_t a, uint8_t b) { return a ^ b; });
+  int2025_t result = *this;
+  result ^= result;
+
+  return result;
 }
 
 // --- public Arithmetics Operations
@@ -259,19 +257,25 @@ int2025_t int2025_t::operator%(const int2025_t& other) const {
 }
 
 int2025_t& int2025_t::operator|=(const int2025_t& other) {
-  *this = *this | other;
+  for (uint32_t index = 0; index < kSize; index++) {
+    this->SetChunk(index, this->GetChunk(index) | other.GetChunk(index));
+  }
 
   return *this;
 }
 
 int2025_t& int2025_t::operator&=(const int2025_t& other) {
-  *this = *this & other;
+  for (uint32_t index = 0; index < kSize; index++) {
+    this->SetChunk(index, this->GetChunk(index) & other.GetChunk(index));
+  }
 
   return *this;
 }
 
 int2025_t& int2025_t::operator^=(const int2025_t& other) {
-  *this = *this ^ other;
+  for (uint32_t index = 0; index < kSize; index++) {
+    this->SetChunk(index, this->GetChunk(index) ^ other.GetChunk(index));
+  }
 
   return *this;
 }
@@ -521,6 +525,16 @@ char* int2025_t::ToString() const {
   return char_result;
 }
 
+char* int2025_t::ToHexString() const{
+  char* str = new char[kSize + 1]; str[kSize] = '\0';
+
+  for (uint32_t index = 0; index < kSize; index++){
+    str[index] = GetChunk(index);
+  }
+
+  return str;
+}
+
 int64_t int2025_t::ToInt64() const {
   // Задать вопрос про реализацию через указатели
   int64_t result = 0;
@@ -700,10 +714,13 @@ int2025_t int2025_t::RightShift(uint32_t k) const {
 // --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
-  for (uint32_t index = 0; index < int2025_t::kSize; index++) {
-    stream << value.GetChunk(index);
+  char* str = value.ToHexString();
+
+  for (uint32_t index = 0; str[index] != '\0'; index++) {
+    stream << str[index];
   }
 
+  delete[] str;
   return stream;
 }
 
