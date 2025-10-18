@@ -714,10 +714,10 @@ int2025_t int2025_t::RightShift(uint32_t k) const {
 // --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
-  char* str = value.ToHexString();
+  char* str = value.ToString();
 
-  for (uint32_t index = 0; index < int2025_t::kSize; index++) {
-    stream << (uint32_t)str[index];
+  for (uint32_t index = 0; str[index] != '\0'; index++) {
+    stream << str[index];
   }
 
   delete[] str;
