@@ -526,7 +526,7 @@ char* int2025_t::ToString() const {
 }
 
 char* int2025_t::ToHexString() const{
-  char* str = new char[kSize + 1]; str[kSize] = '\0';
+  char *str = new char[kSize + 1]; str[kSize] = '\0';
 
   for (uint32_t index = 0; index < kSize; index++){
     str[index] = GetChunk(index);
@@ -717,7 +717,7 @@ std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
   char* str = value.ToHexString();
 
   for (uint32_t index = 0; str[index] != '\0'; index++) {
-    stream << str[index];
+    stream << (uint32_t)str[index];
   }
 
   delete[] str;
