@@ -526,7 +526,7 @@ char* int2025_t::ToString() const {
 }
 
 char* int2025_t::ToHexString() const{
-  char *str = new char[kSize + 1]; str[kSize] = '\0';
+  char *str = new char[1000]; str[kSize] = '\0';
 
   for (uint32_t index = 0; index < kSize; index++){
     str[index] = GetChunk(index);
