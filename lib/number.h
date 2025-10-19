@@ -45,6 +45,7 @@ struct int2025_t {
   char* ToString() const;
   char* ToHexString() const;
   char* ToOctString() const;
+  uint32_t* ToArrayInt() const;
   int64_t ToInt64() const;
   uint8_t GetSgn() const;
   int2025_t& SelfLeftShift(uint32_t k);

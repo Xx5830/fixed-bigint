@@ -184,6 +184,9 @@ int2025_t int2025_t::operator*(const int2025_t& other) const {
         ++end_dp;
         if (end_dp == 64){
           end_dp = 0;
+          for (int i = 0; i < 256; i++){
+            where_dp[i] = -1;
+          }
         }
       }  
 
@@ -221,14 +224,11 @@ int2025_t int2025_t::operator/(const int2025_t& other) const {
     int32_t dif = my_copy.HighestOneBit() - other_copy.HighestOneBit();
     int32_t dif_pos = dif;
 
-    int2025_t hight_bit = 1;
-    hight_bit.SelfLeftShift(dif);
     other_copy.SelfLeftShift(dif);
 
     while (dif_pos >= 0) {
       while (dif_pos >= 0 && other_copy > my_copy) {
         other_copy.SelfRightShift(1);
-        hight_bit.SelfRightShift(1);
         --dif_pos;
       }
 
@@ -236,7 +236,7 @@ int2025_t int2025_t::operator/(const int2025_t& other) const {
         break;
       }
 
-      result += hight_bit;
+      result += ((int2025_t)(uint64_t)1).SelfLeftShift(dif_pos);
       my_copy -= other_copy;
     }
   }
@@ -692,6 +692,17 @@ char* int2025_t::ToOctString() const {
   }
 }
 
+uint32_t* int2025_t::ToArrayInt() const {
+  uint32_t *mas = new uint32_t[kSize];
+
+  for  (uint32_t index = 0; index < kSize; index++){
+    mas[kSize - index - 1] = GetChunk(index);
+  }
+  mas[0] ^= GetSgn() << 8;
+
+  return mas;
+}
+
 int64_t int2025_t::ToInt64() const {
   int64_t result = 0;
   result += GetChunk(0);
@@ -862,7 +873,15 @@ int2025_t int2025_t::RightShift(uint32_t k) const {
 // --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
-  uint32_t flag = stream.flags();
+  //Fast
+  uint32_t *mas = value.ToArrayInt();
+  for (uint32_t index = 0; index < value.kSize; index++){
+    stream << mas[index];
+  }
+  delete[] mas;
+  return stream;
+
+  /* uint32_t flag = stream.flags();
   static const uint32_t kOctFlag = 0b01000000;
   static const uint32_t kDecFlag = 0b00000010;
   static const uint32_t kHexFlag = 0b00001000;
@@ -884,7 +903,7 @@ std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
   }
 
   delete[] str;
-  return stream;
+  return stream; */
 }
 
 int2025_t from_string(const char* str) { return (int2025_t)(str); }
