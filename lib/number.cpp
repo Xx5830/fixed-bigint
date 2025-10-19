@@ -155,14 +155,14 @@ int2025_t int2025_t::operator*(const int2025_t& other) const {
 
   int2025_t result = 0;
 
-  int8_t where_dp[256];
+  static int8_t where_dp[256];
   for (uint32_t index = 0; index < 256; index++){
     where_dp[index] = -1;
   }
-  static int2025_t dp[256];
-  uint32_t end_dp = 0;
+  static int2025_t dp[64];
+  uint8_t end_dp = 0;
 
-  for (uint32_t index_chunk = 0; index_chunk < kSize; index_chunk++){
+  for (uint32_t index_chunk = 0; index_chunk < kSize && index_chunk < other_copy.HighestOneBit() / 32 + 2; index_chunk++){
     uint32_t chunk = other_copy.GetChunk(index_chunk);
 
     for (uint32_t index_byte = 0; index_byte < 4 && chunk > 0; index_byte++){
@@ -182,6 +182,9 @@ int2025_t int2025_t::operator*(const int2025_t& other) const {
         }
 
         ++end_dp;
+        if (end_dp == 64){
+          end_dp = 0;
+        }
       }  
 
       result += dp[where_dp[byte]].LeftShift(index_chunk * 32 + index_byte * 8);
