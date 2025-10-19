@@ -152,19 +152,48 @@ int2025_t int2025_t::operator*(const int2025_t& other) const {
   if (other_copy.GetSgn()) {
     other_copy = other_copy.RevSgn();
   }
+
   int2025_t result = 0;
 
-  while (other_copy.LowestOneBit() != -1) {
-    if (other_copy.GetChunk(0) & 1) {
-      result += my_copy;
-    }
+  int8_t where_dp[256];
+  for (uint32_t index = 0; index < 256; index++){
+    where_dp[index] = -1;
+  }
+  int2025_t *dp[256];
+  uint32_t end_dp = 0;
 
-    my_copy.SelfLeftShift(1);
-    other_copy.SelfRightShift(1);
+  for (uint32_t index_chunk = 0; index_chunk < kSize; index_chunk++){
+    uint32_t chunk = other_copy.GetChunk(index_chunk);
+
+    for (uint32_t index_byte = 0; index_byte < 4; index_byte++){
+      uint8_t byte = chunk & 0b11111111;
+      chunk >>= 8;
+
+      if (where_dp[byte] == -1){
+        dp[end_dp] = new int2025_t;
+        where_dp[byte] = end_dp;
+
+        uint8_t copy_byte = byte;
+        for (uint32_t index = 0; index < 8; index++){
+          if (copy_byte & 1){
+            *dp[end_dp] += my_copy.LeftShift(index);
+          }
+          copy_byte >>= 1;
+        }
+
+        ++end_dp;
+      }  
+
+      result += dp[where_dp[byte]]->LeftShift(index_chunk * 32 + index_byte * 8);
+    }
   }
 
   if (final_sgn) {
     result = result.RevSgn();
+  }
+
+  for (uint32_t index = 0; index < end_dp; index++){
+    delete dp[index];
   }
   return result;
 }
