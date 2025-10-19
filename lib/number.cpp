@@ -693,7 +693,7 @@ char* int2025_t::ToOctString() const {
 }
 
 uint32_t* int2025_t::ToArrayInt() const {
-  uint32_t *mas = new uint32_t[kSize];
+  static uint32_t mas[kSize];
 
   for  (uint32_t index = 0; index < kSize; index++){
     mas[kSize - index - 1] = GetChunk(index);
@@ -878,7 +878,6 @@ std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
   for (uint32_t index = 0; index < value.kSize; index++){
     stream << mas[index];
   }
-  delete[] mas;
   return stream;
 
   /* uint32_t flag = stream.flags();
