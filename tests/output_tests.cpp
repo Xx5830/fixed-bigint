@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <sstream>
+#include <string>
 #include "lib/number.h"
 
 

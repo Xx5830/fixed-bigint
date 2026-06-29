@@ -39,3 +39,11 @@
 
 # debug information files
 *.dwo
+
+# MyFile
+lib/test
+lib/test.cpp
+lib/.vscode
+lib/a.out
+lib/number
+build

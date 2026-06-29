@@ -1,40 +1,921 @@
 #include "number.h"
 
+#include <cmath>
+#include <cstdint>
+#include <iostream>
 
-int2025_t from_int(int32_t i) {
-    return int2025_t();
+// --- Constructions
+
+int2025_t::int2025_t() {}
+
+int2025_t::int2025_t(int64_t value) {
+  bool swap_sgn = 0;
+  if (value < 0) {
+    swap_sgn = 1;
+    value = -value;
+  }
+
+  SetChunk(0, value);
+  SetChunk(1, value >> 32);
+
+  if (swap_sgn) {
+    RevSgn();
+  }
 }
 
-int2025_t from_string(const char* buff) {
-    return int2025_t();
+int2025_t::int2025_t(uint64_t value) {
+  SetChunk(0, value);
+  SetChunk(1, value >> 32);
 }
 
-int2025_t operator+(const int2025_t& lhs, const int2025_t& rhs) {
-    return int2025_t();
+int2025_t::int2025_t(const char* str) {
+  uint32_t index = 0;
+  bool sgn = 0;
+  if (str[index] == '-') {
+    sgn = 1;
+    ++index;
+  }
+  if (str[index] == '+') {
+    ++index;
+  }
+
+  while (str[index] != '\0') {
+    uint64_t buff = 0;
+    uint64_t step = 1;
+
+    while (str[index] != '\0' && step < 1e18) {
+      buff *= 10;
+      buff += str[index] - '0';
+
+      ++index;
+      step *= 10;
+    }
+
+    *this *= step;
+    *this += buff;
+  }
+
+  if (sgn && *this != 0) {
+    RevSgn();
+  }
 }
 
-int2025_t operator-(const int2025_t& lhs, const int2025_t& rhs) {
-    return int2025_t();
+int2025_t::int2025_t(const int2025_t& other) { *this = other; }
+
+// --- private Methods
+
+uint32_t int2025_t::GetChunk(uint32_t index) const {
+  if (index + 1 == kSize) {
+    return byte_;
+  } else {
+    return arrBytes_[index];
+  }
 }
 
-int2025_t operator*(const int2025_t& lhs, const int2025_t& rhs) {
-    return int2025_t();
+void int2025_t::SetChunk(uint32_t index, uint32_t value) {
+  if (index + 1 == kSize) {
+    byte_ = (uint8_t)value;
+  } else {
+    arrBytes_[index] = value;
+  }
 }
 
-int2025_t operator/(const int2025_t& lhs, const int2025_t& rhs) {
-    return int2025_t();
+void int2025_t::SetSgn(bool sgn) { sgn_ = sgn & 1; }
+
+int2025_t& int2025_t::RevSgn() {
+  *this = ~(*this);
+  *this = (*this) + 1;
+
+  return *this;
 }
 
-bool operator==(const int2025_t& lhs, const int2025_t& rhs) {
+// --- public Logic Operations
+
+int2025_t int2025_t::operator~() const {
+  int2025_t result;
+
+  for (uint32_t index = 0; index < int2025_t::kSize; index++) {
+    result.SetChunk(index, ~this->GetChunk(index));
+  }
+  result.SetSgn((bool)(1 - this->GetSgn()));
+
+  return result;
+}
+
+int2025_t int2025_t::operator-() const {
+  int2025_t result = *this;
+  return result.RevSgn();
+}
+
+int2025_t int2025_t::operator|(const int2025_t& other) const {
+  int2025_t result = *this;
+  result |= other;
+
+  return result;
+}
+
+int2025_t int2025_t::operator&(const int2025_t& other) const {
+  int2025_t result = *this;
+  result &= other;
+
+  return result;
+}
+
+int2025_t int2025_t::operator^(const int2025_t& other) const {
+  int2025_t result = *this;
+  result ^= other;
+
+  return result;
+}
+
+// --- public Arithmetics Operations
+
+int2025_t int2025_t::operator+(const int2025_t& other) const {
+  int2025_t result = *this;
+
+  return result += other;
+}
+
+int2025_t int2025_t::operator-(const int2025_t& other) const {
+  int2025_t result = other;
+  result = *this + result.RevSgn();
+  return result;
+}
+
+int2025_t int2025_t::operator*(const int2025_t& other) const {
+  int2025_t my_copy = *this;
+  int2025_t other_copy = other;
+  uint8_t final_sgn = my_copy.GetSgn() ^ other_copy.GetSgn();
+  if (my_copy.GetSgn()) {
+    my_copy = my_copy.RevSgn();
+  }
+  if (other_copy.GetSgn()) {
+    other_copy = other_copy.RevSgn();
+  }
+
+  int2025_t result = 0;
+
+  static int8_t where_dp[256];
+  for (uint32_t index = 0; index < 256; index++) {
+    where_dp[index] = -1;
+  }
+  static int2025_t dp[64];
+  uint8_t end_dp = 0;
+
+  for (uint32_t index_chunk = 0;
+       index_chunk < kSize && index_chunk < other_copy.HighestOneBit() / 32 + 2;
+       index_chunk++) {
+    uint32_t chunk = other_copy.GetChunk(index_chunk);
+
+    for (uint32_t index_byte = 0; index_byte < 4 && chunk > 0; index_byte++) {
+      uint8_t byte = chunk & 0b11111111;
+      chunk >>= 8;
+
+      if (where_dp[byte] == -1) {
+        dp[end_dp] = 0;
+        where_dp[byte] = end_dp;
+
+        uint8_t copy_byte = byte;
+        for (uint32_t index = 0; index < 8; index++) {
+          if (copy_byte & 1) {
+            dp[end_dp] += my_copy.LeftShift(index);
+          }
+          copy_byte >>= 1;
+        }
+
+        ++end_dp;
+        if (end_dp == 64) {
+          end_dp = 0;
+          for (int i = 0; i < 256; i++) {
+            where_dp[i] = -1;
+          }
+        }
+      }
+
+      result += dp[where_dp[byte]].LeftShift(index_chunk * 32 + index_byte * 8);
+    }
+  }
+
+  if (final_sgn) {
+    result = result.RevSgn();
+  }
+
+  return result;
+}
+
+int2025_t int2025_t::operator/(const int2025_t& other) const {
+  int2025_t my_copy = *this;
+  int2025_t other_copy = other;
+  uint8_t final_sgn = my_copy.GetSgn() ^ other_copy.GetSgn();
+  if (my_copy.GetSgn()) {
+    my_copy = my_copy.RevSgn();
+  }
+  if (other_copy.GetSgn()) {
+    other_copy = other_copy.RevSgn();
+  }
+  int2025_t result = 0;
+
+  if (my_copy < other_copy) {
+    return result;
+  }
+  if (other_copy == 0) {
+    return 0;
+  }
+
+  if (my_copy >= other_copy) {
+    int32_t dif = my_copy.HighestOneBit() - other_copy.HighestOneBit();
+    int32_t dif_pos = dif;
+
+    other_copy.SelfLeftShift(dif);
+
+    while (dif_pos >= 0) {
+      while (dif_pos >= 0 && other_copy > my_copy) {
+        other_copy.SelfRightShift(1);
+        --dif_pos;
+      }
+
+      if (dif_pos < 0) {
+        break;
+      }
+
+      result += ((int2025_t)(uint64_t)1).SelfLeftShift(dif_pos);
+      my_copy -= other_copy;
+    }
+  }
+
+  if (final_sgn) {
+    result.RevSgn();
+  }
+  return result;
+}
+
+int2025_t int2025_t::operator%(const int2025_t& other) const {
+  return *this - (*this / other) * other;
+}
+
+int2025_t& int2025_t::operator|=(const int2025_t& other) {
+  for (uint32_t index = 0; index < kSize; index++) {
+    this->SetChunk(index, this->GetChunk(index) | other.GetChunk(index));
+  }
+  this->SetSgn(this->GetSgn() | other.GetSgn());
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator&=(const int2025_t& other) {
+  for (uint32_t index = 0; index < kSize; index++) {
+    this->SetChunk(index, this->GetChunk(index) & other.GetChunk(index));
+  }
+  this->SetSgn(this->GetSgn() | other.GetSgn());
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator^=(const int2025_t& other) {
+  for (uint32_t index = 0; index < kSize; index++) {
+    this->SetChunk(index, this->GetChunk(index) ^ other.GetChunk(index));
+  }
+  this->SetSgn(this->GetSgn() | other.GetSgn());
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator+=(const int2025_t& other) {
+  bool adds = 0;
+  for (int32_t index_chunk = 0; index_chunk < kSize - 1; index_chunk++) {
+    uint32_t chunk_a = this->GetChunk(index_chunk);
+    uint32_t chunk_b = other.GetChunk(index_chunk);
+    uint32_t result_chunk = chunk_a + chunk_b;
+
+    bool next_adds = 0;
+    if (result_chunk < chunk_a || result_chunk < chunk_b) {
+      next_adds = 1;
+    }
+
+    if (adds && result_chunk == (((int64_t)1 << 32) - 1)) {
+      next_adds = 1;
+    }
+    result_chunk += adds & 1;
+    adds = next_adds;
+
+    this->SetChunk(index_chunk, result_chunk);
+  }
+
+  uint8_t chunk_a = this->GetChunk(kSize - 1);
+  uint8_t chunk_b = other.GetChunk(kSize - 1);
+  uint8_t result_chunk = chunk_a + chunk_b;
+
+  bool next_adds = 0;
+  if (result_chunk < chunk_a || result_chunk < chunk_b) {
+    next_adds = 1;
+  }
+
+  if (adds && result_chunk == ((1 << 8) - 1)) {
+    next_adds = 1;
+  }
+  result_chunk += adds & 1;
+  adds = next_adds;
+
+  this->SetChunk(kSize - 1, result_chunk);
+
+  SetSgn((GetSgn() + other.GetSgn() + adds) % 2);
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator-=(const int2025_t& other) {
+  *this = *this - other;
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator*=(const int2025_t& other) {
+  *this = *this * other;
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator/=(const int2025_t& other) {
+  *this = *this / other;
+
+  return *this;
+}
+
+int2025_t& int2025_t::operator%=(const int2025_t& other) {
+  *this = *this % other;
+
+  return *this;
+}
+
+// --- public Boolean Operations
+
+bool int2025_t::operator==(const int2025_t& other) const {
+  for (uint32_t index = 0; index < kSize; index++) {
+    if (GetChunk(index) != other.GetChunk(index)) {
+      return false;
+    }
+  }
+
+  return this->GetSgn() == other.GetSgn();
+}
+
+bool int2025_t::operator!=(const int2025_t& other) const {
+  return !(*this == other);
+}
+
+bool int2025_t::operator<(const int2025_t& other) const {
+  if (GetSgn() != other.GetSgn()) {
+    return GetSgn();
+  }
+
+  if (GetSgn() == 1) {
+    for (int32_t index = kSize - 1; index >= 0; index--) {
+      uint32_t bytes1 = GetChunk(index);
+      uint32_t bytes2 = other.GetChunk(index);
+
+      if (bytes1 > bytes2) {
+        return true;
+      }
+      if (bytes1 < bytes2) {
+        return false;
+      }
+    }
+
     return false;
+  } else {
+    for (int32_t index = kSize - 1; index >= 0; index--) {
+      uint32_t bytes1 = GetChunk(index);
+      uint32_t bytes2 = other.GetChunk(index);
+
+      if (bytes1 < bytes2) {
+        return true;
+      }
+      if (bytes1 > bytes2) {
+        return false;
+      }
+    }
+
+    return false;
+  }
 }
 
-bool operator!=(const int2025_t& lhs, const int2025_t& rhs) {
-    return false;
+bool int2025_t::operator>(const int2025_t& other) const {
+  return !(*this < other) && *this != other;
 }
+
+bool int2025_t::operator<=(const int2025_t& other) const {
+  return !(*this > other);
+}
+
+bool int2025_t::operator>=(const int2025_t& other) const {
+  return !(*this < other);
+}
+
+// --- public Relation Operations
+
+int2025_t& int2025_t::operator=(const int2025_t& other) {
+  for (uint32_t index = 0; index < kSize; index++) {
+    SetChunk(index, other.GetChunk(index));
+  }
+  SetSgn(other.GetSgn());
+
+  return *this;
+}
+
+// --- public Methods
+
+char* int2025_t::ToBinString() const {
+  char* result = new char[2026];
+  result[2025] = '\0';
+
+  result[0] = '0' + GetSgn();
+
+  uint32_t chunk = GetChunk(kSize - 1);
+  for (int32_t index_bit = 7; index_bit >= 0; index_bit--) {
+    uint8_t bit = (chunk & (1 << 7)) >> 7;
+    chunk <<= 1;
+
+    result[8 - index_bit] = '0' + bit;
+  }
+
+  for (int32_t index_chunk = kSize - 2, index_result = 9; index_chunk >= 0;
+       index_chunk--) {
+    uint32_t chunk = GetChunk(index_chunk);
+
+    for (int32_t index_bit = 31; index_bit >= 0; index_bit--, index_result++) {
+      uint8_t bit = (chunk & (1 << 31)) >> 31;
+      chunk <<= 1;
+      result[index_result] = '0' + bit;
+    }
+  }
+
+  return result;
+}
+
+char* int2025_t::ToString() const {
+  struct BigInt {
+    char buff[1000]{48};
+    uint32_t end = 1;
+
+    BigInt() {
+      for (uint32_t index = 0; index < 1000; index++) {
+        buff[index] = '0';
+      }
+    }
+
+    BigInt& operator+=(BigInt other) {
+      bool next = 0;
+      for (uint32_t index = 0; index < other.end || next; index++) {
+        next = 0;
+        buff[index] += other.buff[index] - '0';
+
+        if (buff[index] > '9') {
+          buff[index] -= 10;
+          buff[index + 1]++;
+          next = 1;
+        }
+
+        end = std::max(end, index + 1);
+      }
+
+      return *this;
+    }
+  };
+  BigInt result;
+  BigInt p;
+  p.buff[p.end - 1] = '1';
+
+  int2025_t my_copy = *this;
+
+  uint8_t sgn = my_copy.GetSgn();
+  if (sgn) {
+    my_copy.RevSgn();
+  }
+
+  char* bits = my_copy.ToBinString();
+
+  for (int32_t index = 2024; index > 0; index--) {
+    if (bits[index] == '1') {
+      result += p;
+    }
+
+    p += p;
+  }
+
+  char* char_result;
+  if (!sgn) {
+    char_result = new char[result.end + 1];
+    for (int32_t index_result = result.end - 1, index_char_result = 0;
+         index_result >= 0; index_result--, index_char_result++) {
+      char_result[index_char_result] = result.buff[index_result];
+    }
+    char_result[result.end] = '\0';
+  } else {
+    char_result = new char[result.end + 2];
+    char_result[0] = '-';
+    for (int32_t index_result = result.end - 1, index_char_result = 1;
+         index_result >= 0; index_result--, index_char_result++) {
+      char_result[index_char_result] = result.buff[index_result];
+    }
+    char_result[result.end + 1] = '\0';
+  }
+
+  delete[] bits;
+  return char_result;
+}
+
+char* int2025_t::ToHexString() const {
+  char* result;
+  if (GetSgn()) {
+    int2025_t copy = *this;
+    copy.RevSgn();
+
+    uint32_t size_result = std::max(1, 1 + copy.HighestOneBit() / 4);
+    uint32_t cnt_chunk = (size_result + 3) / 4;
+    result = new char[size_result + 2];
+
+    result[0] = '-';
+    for (int32_t index_chunk = cnt_chunk - 1, index_byte = size_result;
+         index_chunk >= 0; index_chunk--) {
+      uint32_t chunk = copy.GetChunk(index_chunk);
+
+      for (int32_t part_chunk = 3; part_chunk >= 0; part_chunk--) {
+        if (index_chunk == cnt_chunk - 1) {
+          uint32_t need_chunk = size_result % 32 / 16;
+          while (part_chunk > need_chunk) {
+            chunk <<= 8;
+            --part_chunk;
+          }
+        }
+        uint8_t byte = chunk >> 24;
+        chunk <<= 8;
+
+        uint8_t hex_a = byte & 0b00001111;
+        uint8_t hex_b = byte >> 4;
+
+        if (hex_a > 10) {
+          result[index_byte] = 'A' + (hex_a - 10);
+        } else {
+          result[index_byte] = '0' + hex_a;
+        }
+        --index_byte;
+
+        if (index_chunk != cnt_chunk - 1 || size_result % 2 == 0) {
+          if (hex_b > 10) {
+            result[index_byte] = 'A' + (hex_b - 10);
+          } else {
+            result[index_byte] = '0' + hex_b;
+          }
+          --index_byte;
+        }
+      }
+    }
+
+    result[size_result + 1] = '\0';
+  } else {
+    uint32_t size_result = std::max(1, 1 + HighestOneBit() / 4);
+    uint32_t cnt_chunk = (size_result + 3) / 4;
+    result = new char[size_result + 1];
+
+    for (int32_t index_chunk = cnt_chunk - 1, index_byte = size_result - 1;
+         index_chunk >= 0; index_chunk--) {
+      uint32_t chunk = GetChunk(index_chunk);
+
+      for (int32_t part_chunk = 3; part_chunk >= 0; part_chunk--) {
+        if (index_chunk == cnt_chunk - 1) {
+          uint32_t need_chunk = size_result % 32 / 16;
+          while (part_chunk > need_chunk) {
+            chunk <<= 8;
+            --part_chunk;
+          }
+        }
+        uint8_t byte = chunk >> 24;
+        chunk <<= 8;
+
+        uint8_t hex_a = byte & 0b00001111;
+        uint8_t hex_b = byte >> 4;
+
+        if (hex_a > 10) {
+          result[index_byte] = 'A' + (hex_a - 10);
+        } else {
+          result[index_byte] = '0' + hex_a;
+        }
+        --index_byte;
+
+        if (index_chunk != cnt_chunk - 1 || size_result % 2 == 0) {
+          if (hex_b > 10) {
+            result[index_byte] = 'A' + (hex_b - 10);
+          } else {
+            result[index_byte] = '0' + hex_b;
+          }
+          --index_byte;
+        }
+      }
+    }
+
+    result[size_result] = '\0';
+  }
+
+  return result;
+}
+
+char* int2025_t::ToOctString() const {
+  bool sgn = GetSgn();
+  char* result;
+  if (sgn){
+    int2025_t copy = *this;
+    copy.RevSgn();
+
+    char* str = copy.ToBinString();
+    uint32_t size_str = 0;
+    uint32_t left = -1;
+    while (str[size_str] != '\0'){
+      if (left == -1 && str[size_str] == '1'){
+        left = size_str;
+      }
+      ++size_str;
+    }
+
+    if (left == -1){
+      delete[] str;
+      return new char[2]{'0', '\0'};
+    }
+
+    uint32_t size_res = ((size_str - left) + 2) / 3;
+    result = new char[size_res + 2];
+
+    uint32_t chunk = 0;
+    int32_t period = 0;
+    int32_t index_res = size_res;
+    for (int32_t index_str = size_str - 1; index_str >= left; index_str--){
+      uint8_t bit = str[index_str] - '0';
+
+      chunk += bit << period;
+      if (period == 2){
+        result[index_res--] = '0' + chunk;
+        period = -1;
+        chunk = 0;
+      }
+      ++period;
+    }
+    if (index_res >= 1){
+      result[index_res] = '0' + chunk;
+    }
+
+    result[0] = '-';
+    result[size_res + 1] = '\0';
+    delete[] str;
+  }
+  else{
+    char* str = ToBinString();
+    uint32_t size_str = 0;
+    uint32_t left = -1;
+    while (str[size_str] != '\0'){
+      if (left == -1 && str[size_str] == '1'){
+        left = size_str;
+      }
+      ++size_str;
+    }
+
+    if (left == -1){
+      delete[] str;
+      return new char[2]{'0', '\0'};
+    }
+
+    uint32_t size_res = ((size_str - left) + 2) / 3;
+    result = new char[size_res + 1];
+
+    uint32_t chunk = 0;
+    int32_t period = 0;
+    int32_t index_res = size_res - 1;
+    for (int32_t index_str = size_str - 1; index_str >= left; index_str--){
+      uint8_t bit = str[index_str] - '0';
+
+      chunk += bit << period;
+      if (period == 2){
+        result[index_res--] = '0' + chunk;
+        period = -1;
+        chunk = 0;
+      }
+      ++period;
+    }
+    if (index_res >= 0){
+      result[index_res] = '0' + chunk;
+    }
+
+    result[size_res] = '\0';
+
+    delete[] str;
+  }
+
+  return result;
+}
+
+uint32_t* int2025_t::ToArrayInt() const {
+  static uint32_t mas[kSize];
+
+  for (uint32_t index = 0; index < kSize; index++) {
+    mas[kSize - index - 1] = GetChunk(index);
+  }
+  mas[0] ^= GetSgn() << 8;
+
+  return mas;
+}
+
+int64_t int2025_t::ToInt64() const {
+  int64_t result = 0;
+  result += GetChunk(0);
+  result += (uint64_t)GetChunk(1) << 32;
+
+  int64_t sgn = GetSgn();
+
+  result -= (result & ((uint64_t)1 << 63));
+  result += sgn << 63;
+
+  return result;
+}
+
+uint8_t int2025_t::GetSgn() const { return sgn_; }
+
+int32_t int2025_t::LowestOneBit(uint32_t left) const {
+  for (uint32_t index = left; index < kSize; index++) {
+    uint32_t byte = GetChunk(index);
+
+    if (byte > 0) {
+      uint32_t ost = 0;
+      while ((byte & 1) == 0) {
+        byte >>= 1;
+        ++ost;
+      }
+
+      return index * 32 + ost;
+    }
+  }
+
+  return -1;
+}
+
+int32_t int2025_t::HighestOneBit(uint32_t right) const {
+  for (int32_t index = right; index >= 0; index--) {
+    uint32_t byte = GetChunk(index);
+
+    if (byte > 0) {
+      uint32_t ost = 31;
+      while ((byte & (1 << ost)) == 0) {
+        --ost;
+      }
+
+      return index * 32 + ost;
+    }
+  }
+
+  return -1;
+}
+
+int2025_t& int2025_t::SelfLeftShift(uint32_t k) {
+  if (k == 0) {
+    return *this;
+  }
+
+  uint32_t cnt_byte = k / 32;
+
+  if (cnt_byte > 0) {
+    SetChunk(kSize - 1, 0);
+    SetSgn(0);
+
+    for (int32_t index = kSize - 2; index >= 0; index--) {
+      if (index + cnt_byte + 1 == kSize) {
+        uint8_t byte = GetChunk(index) & 0b11111111;
+        uint8_t bit = GetChunk(index) & 0b1000000000;
+        SetSgn(bit);
+        SetChunk(kSize - 1, byte);
+      } else if (index + cnt_byte < kSize) {
+        SetChunk(index + cnt_byte, GetChunk(index));
+      }
+
+      SetChunk(index, 0);
+    }
+  }
+
+  k -= cnt_byte * 32;
+
+  if (k > 0) {
+    if (k <= 8) {
+      uint8_t byte = GetChunk(kSize - 1);
+      uint8_t index_bit = 8 - k;
+      uint8_t bit = byte & (1 << index_bit);
+      SetSgn(bit);
+    } else {
+      uint32_t chunk = GetChunk(kSize - 2);
+      uint32_t index_bit = 32 - (k - 8);
+      uint8_t bit = chunk & (1 << index_bit);
+      SetSgn(bit);
+    }
+
+    for (int32_t index = kSize - 1; index >= 0; index--) {
+      SetChunk(index, GetChunk(index) << k);
+
+      if (index > 0) {
+        uint32_t left_chunk = GetChunk(index - 1);
+
+        uint32_t mask = left_chunk >> (32 - k);
+        SetChunk(index, GetChunk(index) | mask);
+      }
+    }
+  }
+
+  return *this;
+}
+
+int2025_t& int2025_t::SelfRightShift(uint32_t k) {
+  if (k == 0) {
+    return *this;
+  }
+
+  uint32_t cnt_byte = k / 32;
+
+  if (cnt_byte > 0) {
+    for (int32_t index = 0; index < kSize; index++) {
+      uint32_t chunk = GetChunk(index);
+      if (index + 1 == kSize) {
+        chunk |= (GetSgn() << 8);
+      }
+
+      if (index - cnt_byte >= 0) {
+        SetChunk(index - cnt_byte, chunk);
+      }
+
+      SetChunk(index, 0);
+    }
+
+    SetSgn(0);
+  }
+
+  k -= cnt_byte * 32;
+
+  if (k > 0) {
+    for (int32_t index = 0; index < kSize; index++) {
+      SetChunk(index, GetChunk(index) >> k);
+
+      if (index == kSize - 1 && k <= 8) {
+        SetChunk(index, GetChunk(index) | (GetSgn() << (8 - k)));
+      }
+
+      if (index < kSize - 1) {
+        uint32_t right_bit = GetChunk(index + 1);
+        if (index + 1 == kSize - 1) {
+          right_bit |= GetSgn() << 8;
+        }
+
+        uint32_t mask = right_bit << (32 - k);
+        SetChunk(index, GetChunk(index) | mask);
+      }
+    }
+
+    SetSgn(0);
+  }
+
+  return *this;
+}
+
+int2025_t int2025_t::LeftShift(uint32_t k) const {
+  int2025_t result = *this;
+  return result.SelfLeftShift(k);
+}
+
+int2025_t int2025_t::RightShift(uint32_t k) const {
+  int2025_t result = *this;
+  return result.SelfRightShift(k);
+}
+
+// --- External Operations
 
 std::ostream& operator<<(std::ostream& stream, const int2025_t& value) {
-    stream << "Implement me";
+  uint32_t flag = stream.flags();
+  static const uint32_t kOctFlag = stream.oct;
+  static const uint32_t kDecFlag = stream.dec;
+  static const uint32_t kHexFlag = stream.hex;
 
-    return stream;
+  char* str;
+  if ((flag & kDecFlag) ||
+      ((flag & (kOctFlag | kHexFlag)) == (kOctFlag | kHexFlag))) {
+    str = value.ToString();
+  } else if (flag & kHexFlag) {
+    str = value.ToHexString();
+  } else if (flag & kOctFlag) {
+    str = value.ToOctString();
+  } else {
+    str = value.ToString();
+  }
+
+  for (uint32_t index = 0; str[index] != '\0'; index++) {
+    stream << char(str[index]);
+  }
+
+  delete[] str;
+  return stream;
 }
+
+int2025_t from_string(const char* str) { return (int2025_t)(str); }
+
+int2025_t from_int(int64_t value) { return value; }
