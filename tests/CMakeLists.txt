@@ -1,35 +1,24 @@
 include(FetchContent)
 
 FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/releases/download/v1.16.0/googletest-1.16.0.tar.gz
-    DOWNLOAD_EXTRACT_TIMESTAMP ON
-    FIND_PACKAGE_ARGS NAMES GTest
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        release-1.12.1
 )
-
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-enable_testing()
+add_executable(fixed_bigint_tests test_fixed_bigint.cpp)
 
-add_executable(
-  number_tests
-  conversion_tests.cpp
-  arithmetic_tests.cpp
-  comparison_tests.cpp
-  output_tests.cpp
-  edge_cases_tests.cpp
-  compatibility_tests.cpp
+target_link_libraries(fixed_bigint_tests
+    PRIVATE
+    fbi::fixed_bigint
+    gtest_main
 )
 
-target_link_libraries(
-  number_tests
-  number
-  GTest::gtest_main
-)
-
-target_include_directories(number_tests PUBLIC ${PROJECT_SOURCE_DIR})
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(fixed_bigint_tests PRIVATE -fsanitize=address,undefined -g -O0)
+    target_link_options(fixed_bigint_tests PRIVATE -fsanitize=address,undefined)
+endif()
 
 include(GoogleTest)
-
-gtest_discover_tests(number_tests)
+gtest_discover_tests(fixed_bigint_tests)
